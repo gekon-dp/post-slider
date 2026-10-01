@@ -45,6 +45,7 @@ const renderPost = (post) => {
 };
 
 const loadPost = async () => {
+  postContainer.innerHTML = "<p class='loading'>Loading...</p>";
   const post = await getPostById(postNumber);
   renderPost(post);
 };
