@@ -1,30 +1,27 @@
-// Реализовать функционал переключения между постами.
-// В качестве API использовать https://jsonplaceholder.typicode.com/posts/
-
-// Страница должна содержать 2 кнопки (вперед, назад),
-// которые переключают к следующему и предыдущему посту соответственно.
-// При загрузке страницы должен отправляться запрос на получение поста с id=1.
-
 const postContainer = document.querySelector("#root");
 const prevPostBtn = document.querySelector(".left");
 const nextPostBtn = document.querySelector(".right");
 
 const BASE_URL = "https://jsonplaceholder.typicode.com";
-
 const localStorageKey = "postNumber";
-let postNumber = 1;
 
-if (localStorage.getItem(localStorageKey)) {
-  postNumber = Number(localStorage.getItem(localStorageKey));
-}
+let postNumber = localStorage.getItem(localStorageKey)
+  ? Number(localStorage.getItem(localStorageKey))
+  : 1;
 
-const getPostById = async (postNumber) => {
+let lastValidPostData = null;
+const getPostById = async (id) => {
   try {
-    const response = await fetch(`${BASE_URL}/posts/${postNumber}`);
+    const response = await fetch(`${BASE_URL}/posts/${id}`);
+    if (!response.ok) return null;
+
     const data = await response.json();
+    if (!data || Object.keys(data).length === 0) return null;
+
     return data;
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    return null;
   }
 };
 
@@ -33,35 +30,51 @@ const renderPost = (post) => {
   const title = document.createElement("p");
   const body = document.createElement("p");
   const id = document.createElement("h3");
-  const continer = document.createElement("div");
+  const container = document.createElement("div");
 
   title.textContent = post.title;
   body.textContent = post.body;
   id.textContent = post.id;
-  continer.classList.add("post");
+  container.classList.add("post");
   title.classList.add("subheader");
-  continer.append(id, title, body);
-  postContainer.append(continer);
+  container.append(id, title, body);
+  postContainer.append(container);
 };
 
-const loadPost = async () => {
+const loadPost = async (oldId) => {
   postContainer.innerHTML = "<p class='loading'>Loading...</p>";
   const post = await getPostById(postNumber);
-  renderPost(post);
+
+  if (post) {
+    lastValidPostData = post;
+    localStorage.setItem(localStorageKey, `${postNumber}`);
+    renderPost(post);
+  } else {
+    console.log(`Поста с ID ${postNumber} не существует! Откат к ID ${oldId}.`);
+    postNumber = oldId;
+
+    if (lastValidPostData) {
+      renderPost(lastValidPostData);
+    } else {
+      postContainer.innerHTML = "<p>Не удалось загрузить данные</p>";
+    }
+  }
 };
 
-loadPost();
+loadPost(postNumber);
 
 nextPostBtn.addEventListener("click", () => {
+  const oldId = postNumber;
   postNumber++;
-  localStorage.setItem(localStorageKey, `${postNumber}`);
-  loadPost();
+  loadPost(oldId);
 });
 
 prevPostBtn.addEventListener("click", () => {
-  postNumber--;
-  localStorage.setItem(localStorageKey, `${postNumber}`);
-  loadPost();
+  if (postNumber > 1) {
+    const oldId = postNumber;
+    postNumber--;
+    loadPost(oldId);
+  } else {
+    console.log("Вы находитесь на самом первом посте. Назад нельзя.");
+  }
 });
-
-// 1.localStorageя 2.Loading, 3.Валидация 4.Debounce (350ms - 1 click)
