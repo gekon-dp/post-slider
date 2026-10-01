@@ -10,7 +10,13 @@ const prevPostBtn = document.querySelector(".left");
 const nextPostBtn = document.querySelector(".right");
 
 const BASE_URL = "https://jsonplaceholder.typicode.com";
+
+const localStorageKey = "postNumber";
 let postNumber = 1;
+
+if (localStorage.getItem(localStorageKey)) {
+  postNumber = Number(localStorage.getItem(localStorageKey));
+}
 
 const getPostById = async (postNumber) => {
   try {
@@ -21,8 +27,6 @@ const getPostById = async (postNumber) => {
     console.log(error);
   }
 };
-
-getPostById();
 
 const renderPost = (post) => {
   postContainer.innerHTML = "";
@@ -45,14 +49,18 @@ const loadPost = async () => {
   renderPost(post);
 };
 
-loadPost(); // Загрузка поста с id=1
+loadPost();
 
 nextPostBtn.addEventListener("click", () => {
   postNumber++;
+  localStorage.setItem(localStorageKey, `${postNumber}`);
   loadPost();
 });
 
 prevPostBtn.addEventListener("click", () => {
   postNumber--;
+  localStorage.setItem(localStorageKey, `${postNumber}`);
   loadPost();
 });
+
+// 1.localStorageя 2.Loading, 3.Валидация 4.Debounce (350ms - 1 click)
