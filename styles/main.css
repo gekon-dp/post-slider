@@ -1,0 +1,36 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+p {
+  margin: 0;
+}
+button {
+  padding: 4px 10px;
+  border-radius: 4px;
+  color: black;
+  border: 1px solid lightblue;
+  background-color: lightblue;
+  cursor: pointer;
+  margin: 5px;
+  transition: all 0.2 ease-out;
+}
+button:hover {
+  background-color: #fff;
+}
+.post {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: lightblue;
+  border: 2px solid black;
+  border-radius: 20px;
+  padding: 16px;
+  margin: 20px;
+  font-size: 18px;
+  color: #222222;
+}
+.subheader {
+  font-size: 30px;
+}
