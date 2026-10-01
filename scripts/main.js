@@ -1,3 +1,11 @@
+// Реализовать функционал переключения между постами.
+// В качестве API использовать https://jsonplaceholder.typicode.com/posts/
+
+// Страница должна содержать 2 кнопки (вперед, назад),
+// которые переключают к следующему и предыдущему посту соответственно.
+// При загрузке страницы должен отправляться запрос на получение поста с id=1.
+//
+// // 1.localStorage 2.Loading, 3.Валидация 4.Debounce (350ms - 1 click)
 const postContainer = document.querySelector("#root");
 const prevPostBtn = document.querySelector(".left");
 const nextPostBtn = document.querySelector(".right");
@@ -10,17 +18,21 @@ let postNumber = localStorage.getItem(localStorageKey)
   : 1;
 
 let lastValidPostData = null;
+let debounceTimer = null;
+let initialIdBeforeSeries = postNumber;
+
 const getPostById = async (id) => {
   try {
     const response = await fetch(`${BASE_URL}/posts/${id}`);
     if (!response.ok) return null;
 
-    const data = await response.json();
-    if (!data || Object.keys(data).length === 0) return null;
+    const text = await response.text();
+    if (!text || text.trim() === "{}" || text.trim() === "") return null;
 
+    const data = JSON.parse(text);
     return data;
   } catch (error) {
-    console.error(error);
+    console.error("Ошибка при получении поста:", error);
     return null;
   }
 };
@@ -53,27 +65,51 @@ const loadPost = async (oldId) => {
     console.log(`Поста с ID ${postNumber} не существует! Откат к ID ${oldId}.`);
     postNumber = oldId;
 
+    localStorage.setItem(localStorageKey, `${postNumber}`);
+
     if (lastValidPostData) {
       renderPost(lastValidPostData);
     } else {
-      postContainer.innerHTML = "<p>Не удалось загрузить данные</p>";
+      postNumber = 1;
+      localStorage.setItem(localStorageKey, "1");
+      const fallbackPost = await getPostById(1);
+      if (fallbackPost) {
+        lastValidPostData = fallbackPost;
+        renderPost(fallbackPost);
+      } else {
+        postContainer.innerHTML = "<p>Не удалось загрузить данные</p>";
+      }
     }
   }
 };
 
 loadPost(postNumber);
 
+const debounceLoadPost = () => {
+  postContainer.innerHTML = "<p class='loading'>Loading...</p>";
+  clearTimeout(debounceTimer);
+
+  debounceTimer = setTimeout(() => {
+    loadPost(initialIdBeforeSeries);
+    initialIdBeforeSeries = postNumber;
+  }, 350);
+};
+
 nextPostBtn.addEventListener("click", () => {
-  const oldId = postNumber;
+  if (debounceTimer === null || debounceTimer === undefined) {
+    initialIdBeforeSeries = postNumber;
+  }
   postNumber++;
-  loadPost(oldId);
+  debounceLoadPost();
 });
 
 prevPostBtn.addEventListener("click", () => {
   if (postNumber > 1) {
-    const oldId = postNumber;
+    if (debounceTimer === null || debounceTimer === undefined) {
+      initialIdBeforeSeries = postNumber;
+    }
     postNumber--;
-    loadPost(oldId);
+    debounceLoadPost();
   } else {
     console.log("Вы находитесь на самом первом посте. Назад нельзя.");
   }
